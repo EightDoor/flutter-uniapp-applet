@@ -79,19 +79,7 @@ public class MainActivity extends FlutterActivity {
                 .setMethodCallHandler(
                         (call, result) -> {
                             // Note: this method is invoked on the main thread.
-                            if (call.method.equals("getBatteryLevel")) {
-                                try {
-                                    DCUniMPSDK.getInstance().startApp(mContext,"__UNI__04E3A11",MySplashView.class);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                int batteryLevel = getBatteryLevel();
-                                if (batteryLevel != -1) {
-                                    result.success(batteryLevel);
-                                } else {
-                                    result.error("UNAVAILABLE", "Battery level not available.", null);
-                                }
-                            }else if (call.method.equals("openMiniProgram2")) {
+                             if (call.method.equals("openMiniProgram2")) {
                                 try {
                                     DCUniMPSDK.getInstance().startApp(mContext,"__UNI__AB66A80");
                                 } catch (Exception e) {
@@ -99,16 +87,16 @@ public class MainActivity extends FlutterActivity {
                                 }
                             }else if (call.method.equals("openMiniProgram3")) {
                                 String SDPATH = Environment.getExternalStorageDirectory() + "/Download/";
-                                String wgtPath = SDPATH +"/__UNI__AB66A80.wgt";
+                                String wgtPath = SDPATH +"/__UNI__B5AA1D6.wgt";
                                 android.util.Log.d("dsadsa", "configureFlutterEngine: " + wgtPath);
-                                DCUniMPSDK.getInstance().releaseWgtToRunPathFromePath("__UNI__AB66A80", wgtPath, new ICallBack() {
+                                DCUniMPSDK.getInstance().releaseWgtToRunPathFromePath("__UNI__B5AA1D6", wgtPath, new ICallBack() {
                                     @Override
                                     public Object onCallBack(int code, Object pArgs) {
                                         if(code ==1) {//释放wgt完成
                                             try {
                                                 Toast.makeText(getApplicationContext(), wgtPath,
                                                         Toast.LENGTH_SHORT).show();
-                                                DCUniMPSDK.getInstance().startApp(mContext, "__UNI__AB66A80");
+                                                DCUniMPSDK.getInstance().startApp(mContext, "__UNI__B5AA1D6");
                                             } catch (Exception e) {
                                                 e.printStackTrace();
                                             }
@@ -123,22 +111,6 @@ public class MainActivity extends FlutterActivity {
                             }
                         }
                 );
-    }
-
-    private int getBatteryLevel() {
-
-        int batteryLevel = -1;
-        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-            BatteryManager batteryManager = (BatteryManager) getSystemService(BATTERY_SERVICE);
-            batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-        } else {
-            Intent intent = new ContextWrapper(getApplicationContext()).
-                    registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            batteryLevel = (intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) * 100) /
-                    intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        }
-
-        return batteryLevel;
     }
 
     private void checkNeedPermissions(){

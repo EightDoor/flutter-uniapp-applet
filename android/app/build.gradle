@@ -25,11 +25,17 @@ apply plugin: 'com.android.application'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 
-//必须配置
+// 必须配置
 def mfph = [
-        //包名
+        // 包名
         "apk.applicationId" : "com.example.batterylevel",
 ]
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('zhoukai.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 android {
     compileSdkVersion 29
@@ -52,6 +58,7 @@ android {
         ndk {
             abiFilters 'x86','armeabi-v7a',"arm64-v8a" //不支持armeabi
         }
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         configurations.all {
             resolutionStrategy.eachDependency { DependencyResolveDetails details ->
@@ -65,15 +72,28 @@ android {
         }
     }
 
-    buildTypes {
+    signingConfigs {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
         }
     }
 
-    //此处配置必须添加 否则无法正确运行
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg'
+        }
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    // 此处配置必须添加 否则无法正确运行
     aaptOptions {
         additionalParameters '--auto-add-overlay'
         //noCompress 'foo', 'bar'
@@ -87,14 +107,14 @@ flutter {
 }
 
 
-//导入aar需要的配置
+// 导入aar需要的配置
 repositories {
     flatDir {
         dirs 'libs'
     }
 }
 dependencies {
-    //导入SDK相关依赖jar、aar
+    // 导入SDK相关依赖jar、aar
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation fileTree(include: ['*.aar'], dir: 'libs')
     //必须添加的依赖
@@ -106,5 +126,4 @@ dependencies {
     implementation 'com.facebook.fresco:animated-gif:1.13.0'
     implementation 'com.github.bumptech.glide:glide:4.9.0'
     implementation 'com.android.support:multidex:1.0.3'
-
 }
