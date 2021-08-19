@@ -1,0 +1,110 @@
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+apply plugin: 'com.android.application'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+
+//必须配置
+def mfph = [
+        //包名
+        "apk.applicationId" : "com.example.batterylevel",
+]
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
+
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId "com.example.batterylevel"
+        minSdkVersion 21
+        targetSdkVersion 26
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+
+        multiDexEnabled true
+        manifestPlaceholders = mfph
+        ndk {
+            abiFilters 'x86','armeabi-v7a',"arm64-v8a" //不支持armeabi
+        }
+
+        configurations.all {
+            resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                def requested = details.requested
+                if (requested.group == 'com.android.support') {
+                    if (!requested.name.startsWith("multidex")) {
+                        details.useVersion '26.+'
+                    }
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    //此处配置必须添加 否则无法正确运行
+    aaptOptions {
+        additionalParameters '--auto-add-overlay'
+        //noCompress 'foo', 'bar'
+        ignoreAssetsPattern "!.svn:!.git:.*:!CVS:!thumbs.db:!picasa.ini:!*.scc:*~"
+    }
+
+}
+
+flutter {
+    source '../..'
+}
+
+
+//导入aar需要的配置
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+dependencies {
+    //导入SDK相关依赖jar、aar
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(include: ['*.aar'], dir: 'libs')
+    //必须添加的依赖
+    implementation 'com.android.support:recyclerview-v7:28.0.0'
+    implementation 'com.android.support:support-v4:28.0.0'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.alibaba:fastjson:1.2.66'
+    implementation 'com.facebook.fresco:fresco:1.13.0'
+    implementation 'com.facebook.fresco:animated-gif:1.13.0'
+    implementation 'com.github.bumptech.glide:glide:4.9.0'
+    implementation 'com.android.support:multidex:1.0.3'
+
+}
