@@ -117,23 +117,27 @@ public class MainActivity extends FlutterActivity {
         String wgtPath = sdPath + pathName + ".wgt";
         android.util.Log.d("当前下载的路径", "configureFlutterEngine: " + wgtPath);
         android.util.Log.d("当前下载的名称", "configureFlutterEngine: " + pathName);
-        DCUniMPSDK.getInstance().releaseWgtToRunPathFromePath(pathName, wgtPath, new ICallBack() {
-            @Override
-            public Object onCallBack(int code, Object pArgs) {
-                if(code == 1) {//释放wgt完成
-                    try {
-                        Toast.makeText(getApplicationContext(), wgtPath,
-                                Toast.LENGTH_SHORT).show();
-                        DCUniMPSDK.getInstance().startApp(mContext, pathName);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        try {
+            DCUniMPSDK.getInstance().releaseWgtToRunPathFromePath(pathName, wgtPath, new ICallBack() {
+                @Override
+                public Object onCallBack(int code, Object pArgs) {
+                    if(code == 1) {//释放wgt完成
+                        try {
+                            Toast.makeText(getApplicationContext(), wgtPath,
+                                    Toast.LENGTH_SHORT).show();
+                            DCUniMPSDK.getInstance().startApp(mContext, pathName);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else{//释放wgt失败
+                        Toast.makeText(mContext, "资源释放失败", Toast.LENGTH_SHORT).show();
                     }
-                } else{//释放wgt失败
-                    Toast.makeText(mContext, "资源释放失败", Toast.LENGTH_SHORT).show();
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     void downloadFun(String path, String name) {
