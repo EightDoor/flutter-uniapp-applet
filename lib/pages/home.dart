@@ -51,11 +51,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> remoteApplet(String? name) async {
     try {
-      final int result = await platform.invokeMethod(
+      platform
+          .invokeMethod(
         'remoteApplet',
         name,
-      );
-      print(result);
+      )
+          .then((value) {
+        print(
+          value,
+        );
+      });
     } on PlatformException catch (e) {
       print(e);
     }
@@ -63,11 +68,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> localResourceApplet(String value) async {
     try {
-      final int result = await platform.invokeMethod(
+      platform
+          .invokeMethod(
         'localResourceApplet',
         value,
-      );
-      print(result);
+      )
+          .then((value) {
+        print(value);
+      });
     } on PlatformException catch (e) {
       print(e);
     }

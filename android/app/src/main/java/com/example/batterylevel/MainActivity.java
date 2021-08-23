@@ -48,7 +48,7 @@ public class MainActivity extends FlutterActivity {
         mContext = this.getContext();
         ImplementNetWork();
 
-        MenuActionSheetItem item = new MenuActionSheetItem("关于", "gy");
+        MenuActionSheetItem item = new MenuActionSheetItem("关于", "   ");
         List<MenuActionSheetItem> sheetItems = new ArrayList<>();
         sheetItems.add(item);
         DCSDKInitConfig config = new DCSDKInitConfig.Builder()
@@ -82,6 +82,7 @@ public class MainActivity extends FlutterActivity {
                                 try {
                                     if(!call.arguments.toString().isEmpty()) {
                                         DCUniMPSDK.getInstance().startApp(mContext, call.arguments());
+                                        result.success("success");
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -91,13 +92,7 @@ public class MainActivity extends FlutterActivity {
                                      String sdPath = mContext.getExternalCacheDir().getPath() + "/Download/";
                                        String r = DCUniMPSDK.getInstance().getAppBasePath(mContext);
                                         android.util.Log.d("小程序保存地址是:", r);
-                                        Thread thread = new Thread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                downloadFun(sdPath, call.arguments());
-                                            }
-                                        });
-                                        thread.start();
+                                        downloadFun(sdPath, call.arguments(), result);
                                  }
                             }else {
                                 result.notImplemented();
@@ -119,7 +114,7 @@ public class MainActivity extends FlutterActivity {
         }
     }
 
-    private void getRemoteDown(String pathName, String sdPath) {
+    private void getRemoteDown(String pathName, String sdPath, MethodChannel.Result result) {
         String wgtPath = sdPath + pathName + ".wgt";
         android.util.Log.d("当前下载的路径", "configureFlutterEngine: " + wgtPath);
         android.util.Log.d("当前下载的名称", "configureFlutterEngine: " + pathName);
@@ -129,14 +124,17 @@ public class MainActivity extends FlutterActivity {
                 public Object onCallBack(int code, Object pArgs) {
                     if(code == 1) {//释放wgt完成
                         try {
-//                            Toast.makeText(getApplicationContext(), wgtPath,
-//                                    Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getApplicationContext(), "资源释放成功",
+                                    Toast.LENGTH_SHORT).show();
                             DCUniMPSDK.getInstance().startApp(mContext, pathName);
+                            result.success("success");
                         } catch (Exception e) {
+                            result.error("FAILED_TO_RELEASE_APPLET", "启动小程序失败", null);
                             e.printStackTrace();
                         }
                     } else{//释放wgt失败
-//                        Toast.makeText(mContext, "资源释放失败", Toast.LENGTH_SHORT).show();
+                        result.error("FAILED_TO_RELEASE_APPLET", "释放小程序失败", null);
+                        Toast.makeText(mContext, "资源释放失败", Toast.LENGTH_SHORT).show();
                     }
                     return null;
                 }
@@ -150,7 +148,7 @@ public class MainActivity extends FlutterActivity {
         new Handler(Looper.getMainLooper()).post(run);
     }
 
-    void downloadFun(String path, String name) {
+    void downloadFun(String path, String name, MethodChannel.Result result) {
         checkNeedPermissions();
         try {
             HTTP http = HTTP.builder()
@@ -170,8 +168,9 @@ public class MainActivity extends FlutterActivity {
             String resultName = path + nameStr;
             http.sync(downloadUrl + nameStr).get().getBody().toFile(resultName).start();
             Log.d("下载", "存储路径为: " + resultName);
-            getRemoteDown(name, path);
+            getRemoteDown(name, path, result);
         }catch (Exception e) {
+            result.error("UNAVAILABLE FAIL", "文件下载失败", null);
             e.printStackTrace();
         }
     }
