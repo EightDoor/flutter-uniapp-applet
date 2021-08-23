@@ -2,6 +2,7 @@ package com.example.batterylevel;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -14,6 +15,8 @@ import io.dcloud.feature.sdk.MenuActionSheetItem;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 
 import android.Manifest;
@@ -21,13 +24,16 @@ import android.content.Context;
 
 import android.content.pm.PackageManager;
 
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Toast;
 
-import java.io.File;
+import com.ejlchina.okhttps.HTTP;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,7 +88,7 @@ public class MainActivity extends FlutterActivity {
                                 }
                             }else if (call.method.equals("remoteApplet")) {
                                  if(!call.arguments.toString().isEmpty()) {
-                                     String sdPath = Environment.getExternalStorageDirectory() + "/Download/";
+                                     String sdPath = mContext.getExternalCacheDir().getPath() + "/Download/";
                                        String r = DCUniMPSDK.getInstance().getAppBasePath(mContext);
                                         android.util.Log.d("小程序保存地址是:", r);
                                         Thread thread = new Thread(new Runnable() {
@@ -123,14 +129,14 @@ public class MainActivity extends FlutterActivity {
                 public Object onCallBack(int code, Object pArgs) {
                     if(code == 1) {//释放wgt完成
                         try {
-                            Toast.makeText(getApplicationContext(), wgtPath,
-                                    Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(getApplicationContext(), wgtPath,
+//                                    Toast.LENGTH_SHORT).show();
                             DCUniMPSDK.getInstance().startApp(mContext, pathName);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     } else{//释放wgt失败
-                        Toast.makeText(mContext, "资源释放失败", Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(mContext, "资源释放失败", Toast.LENGTH_SHORT).show();
                     }
                     return null;
                 }
@@ -140,34 +146,34 @@ public class MainActivity extends FlutterActivity {
         }
     }
 
+    void handler(Runnable run) {
+        new Handler(Looper.getMainLooper()).post(run);
+    }
+
     void downloadFun(String path, String name) {
         checkNeedPermissions();
-        String tag = "下载小程序";
-        DownloadUtil.get().download(downloadUrl, path, name + ".wgt",
-                new DownloadUtil.OnDownloadListener() {
-                    @Override
-                    public void onDownloadSuccess(File file) {
-                        android.util.Log.d(tag, "下载成功");
-                        Thread thread = new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                getRemoteDown(name, path);
-                            }
-                        });
-                        thread.start();
-                    }
-
-                    @Override
-                    public void onDownloading(int progress) {
-                        android.util.Log.d(tag, "下载进度" + progress);
-                    }
-
-                    @Override
-                    public void onDownloadFailed(Exception e) {
-                        ShowToast("下载失败");
-                        android.util.Log.d(tag, "下载失败!");
-                    }
-                });
+        try {
+            HTTP http = HTTP.builder()
+                    .config( builder -> builder.addInterceptor(chain -> {
+                        Response res = chain.proceed(chain.request());
+                        ResponseBody body = res.body();
+                        ResponseBody newBody = null;
+                        if (body != null) {
+                            newBody = ResponseBody.create(body.contentType(), body.bytes());
+                        }
+                        return res.newBuilder().body(newBody).build();
+                    }))
+                    .callbackExecutor((Runnable run) -> {
+                handler(run); // 在主线程执行
+            }).build();
+            String nameStr = name + ".wgt";
+            String resultName = path + nameStr;
+            http.sync(downloadUrl + nameStr).get().getBody().toFile(resultName).start();
+            Log.d("下载", "存储路径为: " + resultName);
+            getRemoteDown(name, path);
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

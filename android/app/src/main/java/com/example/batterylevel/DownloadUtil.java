@@ -1,5 +1,8 @@
 package com.example.batterylevel;
 
+import android.content.Context;
+import android.util.Log;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,12 +15,9 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
- * Created by wanglingsheng on 2018/5/29.
- * 文件下载工具类（单例模式）
+ * Created by Admin on 2021/3/3.
  */
-
 public class DownloadUtil {
-
     private static DownloadUtil downloadUtil;
     private final OkHttpClient okHttpClient;
 
@@ -28,6 +28,25 @@ public class DownloadUtil {
         return downloadUtil;
     }
 
+    /**
+     * 文件下载路径
+     *android 10以后文件读写权限又更改，判断系统属于android10以上还是android10以下，更换路径
+     */
+    public String DownFullVideoPath(Context context) {
+        String dirName;
+//        String dirName = context.getExternalCacheDir().getAbsolutePath();
+        int currentapiVersion = android.os.Build.VERSION.SDK_INT;
+        if (currentapiVersion >= 29) {
+            dirName = context.getExternalCacheDir().getPath();
+
+            return dirName;
+        } else if (currentapiVersion < 29) {
+            dirName = context.getExternalCacheDir().getAbsolutePath();
+            return dirName;
+        }
+        return "";
+    }
+
     public DownloadUtil() {
         okHttpClient = new OkHttpClient();
     }
@@ -36,18 +55,14 @@ public class DownloadUtil {
     /**
      * @param url          下载连接
      * @param destFileDir  下载的文件储存目录
-     * @param destFileName 下载文件名称
+     * @param destFileName 下载文件名称，后面记得拼接后缀，否则手机没法识别文件类型
      * @param listener     下载监听
      */
-
     public void download(final String url, final String destFileDir, final String destFileName, final OnDownloadListener listener) {
-
         Request request = new Request.Builder()
                 .url(url)
                 .build();
-
         OkHttpClient client = new OkHttpClient();
-
         try {
             Response response = client.newCall(request).execute();
         } catch (IOException e) {
@@ -72,11 +87,12 @@ public class DownloadUtil {
 
                 //储存下载文件的目录
                 File dir = new File(destFileDir);
+                dir.delete();
                 if (!dir.exists()) {
                     dir.mkdirs();
                 }
                 File file = new File(dir, destFileName);
-
+                Log.e("lz----:", " " + file);
                 try {
 
                     is = response.body().byteStream();
@@ -92,10 +108,11 @@ public class DownloadUtil {
                     }
                     fos.flush();
                     //下载完成
+
                     listener.onDownloadSuccess(file);
                 } catch (Exception e) {
                     listener.onDownloadFailed(e);
-                }finally {
+                } finally {
 
                     try {
                         if (is != null) {
@@ -107,16 +124,13 @@ public class DownloadUtil {
                     } catch (IOException e) {
 
                     }
-
                 }
-
-
             }
         });
     }
 
 
-    public interface OnDownloadListener{
+    public interface OnDownloadListener {
 
         /**
          * 下载成功之后的文件
